@@ -222,6 +222,32 @@ bloop_generator *bloop_offset(bloop_generator *input, int offset) {
     return bloop_new_generator(bloop_offset_, v);
 }
 
+typedef struct bloop_average_data {
+    int count;
+    bloop_generator** inputs;
+} bloop_average_data;
+
+float bloop_average_(void *value, int tick) {
+    bloop_average_data *data = (bloop_average_data*)value;
+    float s = 0.0;
+    for (int i = 0; i < data->count; i++) {
+        s += bloop_run(data->inputs[i], tick);
+    }
+    return s / ((float)data->count);
+}
+
+bloop_generator *bloop_average(int count, ...) {
+    bloop_average_data *v = malloc(sizeof(*v));
+    v->count = count;
+    v->inputs = malloc(sizeof(bloop_average_data*) * count);
+    va_list args;
+    va_start(args, count);
+    for (int i = 0; i < count; i++) {
+        v->inputs[i] = va_arg(args, bloop_generator*);
+    }
+    return bloop_new_generator(bloop_average_, v);
+}
+
 int tick = 0;
 bloop_generator *generator;
 
@@ -240,8 +266,8 @@ void init(void) {
     });
     generator = bloop_sine_wave(LFO(1.0, 440.0, 110.0), C(1.0)); 
     bloop_generator *kick_drum = bloop_distortion(bloop_sine_wave(bloop_interpolation(90, 36, 4000), bloop_adsr(1.0, 0.2, 500, 500, 4000, 2000)), bloop_interpolation(0.9, 0.2, 100), C(1.0));
-    generator = bloop_sine_wave(bloop_lfo(LFO(8.0, 24, 24), C(880), C(440.0)), bloop_lfo(C(128.0), C(0.2), LFO(2, 0.1, 0.05)));
-    generator = bloop_repeat(kick_drum, 44100);
+    bloop_generator *wobble2 = bloop_sine_wave(bloop_lfo(LFO(8.0, 24, 24), C(880), C(440.0)), bloop_lfo(C(128.0), C(0.2), LFO(2, 0.1, 0.05)));
+    generator = bloop_average(2, bloop_repeat(kick_drum, 44100), wobble2);
     sg_setup(&(sg_desc){
         .context = sapp_sgcontext()
     });
