@@ -131,32 +131,96 @@ bloop_generator *bloop_adsr(float max_gain, float sustain, int attack_samples, i
 }
 
 
-typedef struct LFOData {
+typedef struct bloop_lfo_data {
     bloop_generator *speed;
     bloop_generator *offset;
     bloop_generator *amount;
-} LFOData;
+} bloop_lfo_data;
 
-float LFOGenerator_(void *value, int tick) {
-    LFOData *data = (LFOData*)value;
+float bloop_lfo_(void *value, int tick) {
+    bloop_lfo_data *data = (bloop_lfo_data*)value;
     float speed = bloop_run(data->speed, tick);
     float offset = bloop_run(data->offset, tick);
     float amount = bloop_run(data->amount, tick);
 
-	float stepSize = (speed * M_PI * 2) / (float) SAMPLE_RATE;
+    float stepSize = (speed * M_PI * 2) / (float) SAMPLE_RATE;
     return sin((float)tick * stepSize) * amount + offset;
 }
 
 bloop_generator *bloop_lfo(bloop_generator *speed, bloop_generator *offset, bloop_generator *amount) {
-    LFOData *v = malloc(sizeof(LFOData));
+    bloop_lfo_data *v = malloc(sizeof(bloop_lfo_data));
     v->speed = speed;
     v->offset = offset;
     v->amount = amount;
-    return bloop_new_generator(LFOGenerator_, v);
+    return bloop_new_generator(bloop_lfo_, v);
 }
 
 #define LFO(speed, offset, amount) (bloop_lfo(bloop_constant(speed), bloop_constant(offset), bloop_constant(amount)))
 
+typedef struct bloop_distortion_data {
+    bloop_generator *input;
+    bloop_generator *level;
+    bloop_generator *gain;
+} bloop_distortion_data;
+
+float bloop_distortion_(void *value, int tick) {
+    bloop_distortion_data *data = (bloop_distortion_data*) value;
+    float s = bloop_run(data->input, tick);
+    float lvl = bloop_run(data->level, tick);
+    float gain = bloop_run(data->gain, tick);
+    if (s >= lvl) {
+        s = lvl;
+    } else if (s <= -1*lvl) {
+        s = -1 * lvl;
+    }
+    return s * gain;
+}
+
+bloop_generator *bloop_distortion(bloop_generator *input, bloop_generator *level, bloop_generator *gain) {
+    bloop_distortion_data *v = malloc(sizeof(bloop_distortion_data));
+    v->input = input;
+    v->level = level;
+    v->gain = gain;
+    return bloop_new_generator(bloop_distortion_, v);
+}
+
+typedef struct bloop_repeat_data {
+    bloop_generator *input;
+    int every;
+} bloop_repeat_data;
+
+float bloop_repeat_(void *value, int tick) {
+    bloop_repeat_data *data = (bloop_repeat_data *) value;
+    return bloop_run(data->input, tick % data->every);
+}
+
+bloop_generator *bloop_repeat(bloop_generator *input, int every) {
+    bloop_repeat_data *v = malloc(sizeof(*v));
+    v->input = input;
+    v->every = every;
+    return bloop_new_generator(bloop_repeat_, v);
+}
+
+typedef struct bloop_offset_data {
+    bloop_generator *input;
+    int offset;
+} bloop_offset_data;
+
+float bloop_offset_(void *value, int tick) {
+    bloop_offset_data *data = (bloop_offset_data*)value;
+    int t = tick - data->offset;
+    if (t >= 0) {
+        return bloop_run(data->input, t);
+    }
+    return 0.0;
+}
+
+bloop_generator *bloop_offset(bloop_generator *input, int offset) {
+    bloop_offset_data *v = malloc(sizeof(*v));
+    v->input = input;
+    v->offset = offset;
+    return bloop_new_generator(bloop_offset_, v);
+}
 
 int tick = 0;
 bloop_generator *generator;
@@ -175,9 +239,9 @@ void init(void) {
         .stream_cb = stream_cb
     });
     generator = bloop_sine_wave(LFO(1.0, 440.0, 110.0), C(1.0)); 
-	bloop_generator *kick_drum = bloop_sine_wave(bloop_interpolation(90, 36, 4000), bloop_adsr(1.0, 0.2, 500, 500, 4000, 2000));
-	generator = bloop_sine_wave(bloop_lfo(LFO(8.0, 24, 24), C(880), C(440.0)), bloop_lfo(C(128.0), C(0.2), LFO(2, 0.1, 0.05)));
-    generator = kick_drum;
+    bloop_generator *kick_drum = bloop_distortion(bloop_sine_wave(bloop_interpolation(90, 36, 4000), bloop_adsr(1.0, 0.2, 500, 500, 4000, 2000)), bloop_interpolation(0.9, 0.2, 100), C(1.0));
+    generator = bloop_sine_wave(bloop_lfo(LFO(8.0, 24, 24), C(880), C(440.0)), bloop_lfo(C(128.0), C(0.2), LFO(2, 0.1, 0.05)));
+    generator = bloop_repeat(kick_drum, 44100);
     sg_setup(&(sg_desc){
         .context = sapp_sgcontext()
     });
@@ -209,3 +273,4 @@ sapp_desc sokol_main(int argc, char* argv[]) {
         .window_title = "Clear Sample",
     };
 }
+
