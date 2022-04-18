@@ -52,8 +52,11 @@ floatGeneratorClosure *SineWaveGenerator(floatGeneratorClosure *pitch, floatGene
 }
 
 float ConstantGenerator_(void *value, int tick) {
-    return 440.0;
+    float *v = (float *)value;
+    return *v;
 }
+
+#define C(c) (ConstantGenerator(c))
 
 floatGeneratorClosure *ConstantGenerator(float value) {
     float *v = malloc(sizeof(float));
@@ -62,24 +65,30 @@ floatGeneratorClosure *ConstantGenerator(float value) {
 }
 
 typedef struct LFOData {
-    float speed;
-    float offset;
-    float amount;
+    floatGeneratorClosure *speed;
+    floatGeneratorClosure *offset;
+    floatGeneratorClosure *amount;
 } LFOData;
 
 float LFOGenerator_(void *value, int tick) {
     LFOData *data = (LFOData*)value;
-	float stepSize = (data->speed * M_PI * 2) / (float) SAMPLE_RATE;
-    return sin((float)tick * stepSize) * data->amount + data->offset;
+    float speed = RunClosure(data->speed, tick);
+    float offset = RunClosure(data->offset, tick);
+    float amount = RunClosure(data->amount, tick);
+
+	float stepSize = (speed * M_PI * 2) / (float) SAMPLE_RATE;
+    return sin((float)tick * stepSize) * amount + offset;
 }
 
-floatGeneratorClosure *LFOGenerator(float speed, float offset, float amount) {
+floatGeneratorClosure *LFOGenerator(floatGeneratorClosure *speed, floatGeneratorClosure *offset, floatGeneratorClosure *amount) {
     LFOData *v = malloc(sizeof(LFOData));
     v->speed = speed;
     v->offset = offset;
     v->amount = amount;
     return NewFloatGeneratorClosure(LFOGenerator_, v);
 }
+
+#define LFO(speed, offset, amount) (LFOGenerator(ConstantGenerator(speed), ConstantGenerator(offset), ConstantGenerator(amount)))
 
 
 int tick = 0;
@@ -98,7 +107,9 @@ void init(void) {
     saudio_setup(&(saudio_desc){
         .stream_cb = stream_cb
     });
-    generator = SineWaveGenerator(LFOGenerator(2.0, 440.0, 110.0), ConstantGenerator(1.0)); 
+    generator = SineWaveGenerator(LFO(1.0, 440.0, 110.0), C(1.0)); 
+	generator = SineWaveGenerator(LFOGenerator(LFO(8.0, 24, 24), C(880), C(440.0)), LFOGenerator(C(128.0), C(0.2), LFO(2, 0.1, 0.05)));
+    //generator = SineWaveGenerator(LFOGenerator(ConstantGenerator(1.0), ConstantGenerator(440.0), ConstantGenerator(110.0)), ConstantGenerator(1.0)); 
     //generator = SineWaveGenerator(ConstantGenerator(440.0), ConstantGenerator(1.0));
     sg_setup(&(sg_desc){
         .context = sapp_sgcontext()
