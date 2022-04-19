@@ -165,22 +165,30 @@ bloop_generator *bloop_distortion(bloop_generator *input, bloop_generator *level
 float bloop_delay_(void *value, int tick) {
     bloop_delay_data *data = (bloop_delay_data *) value;
     float s = bloop_run(data->input, tick);
-    float prev = data->ring[data->ring_index];
+    float factor = bloop_run(data->factor, tick);
+    float feedback = bloop_run(data->feedback, tick);
+    int delay_samples = (int)bloop_run(data->delay_samples, tick);
+
+    int prev_index = (data->ring_index - delay_samples);
+    if (prev_index < 0) {
+        prev_index = 8 * SAMPLE_RATE + prev_index;
+    }
+    float prev = data->ring[prev_index];
     data->ring[data->ring_index] = s;
-    s += prev * data->factor;
-    data->ring[data->ring_index] += data->feedback * s;
-    data->ring_index = (data->ring_index + 1) % data->delay_samples;
+    s += prev * factor;
+    data->ring[data->ring_index] += feedback * s;
+    data->ring_index = (data->ring_index + 1) % (8 * SAMPLE_RATE);
     return s;
 }
 
-bloop_generator *bloop_delay(bloop_generator *input, int delay_samples, float factor, float feedback) {
+bloop_generator *bloop_delay(bloop_generator *input, bloop_generator *delay_samples, bloop_generator *factor, bloop_generator *feedback) {
     bloop_delay_data *v = malloc(sizeof(*v));
     v->input = input;
     v->delay_samples = delay_samples;
     v->factor = factor;
     v->feedback = feedback;
     v->ring_index = 0;
-    v->ring = malloc(sizeof(float) * delay_samples); // TODO: always allocate a max size and make time controllable?
+    v->ring = malloc(sizeof(float) * 8 * SAMPLE_RATE); // allocate 8 seconds 
     return bloop_new_generator(bloop_delay_, v);
 }
 

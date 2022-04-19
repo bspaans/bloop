@@ -30,8 +30,8 @@ void init(void) {
     bloop_generator *kick_drum_hit = bloop_white_noise(bloop_adsr(0.3, 0.0, 150, 150, 0, 0));
     bloop_generator *kick_drum = bloop_distortion(bloop_sine_wave(bloop_interpolation(90, 36, 4000), bloop_adsr(1.0, 0.2, 500, 500, 4000, 2000)), bloop_interpolation(0.9, 0.2, 100), C(1.0));
     bloop_generator *kick_drum1 = bloop_average(2, kick_drum, kick_drum_hit);
-    bloop_generator *kick_drum_rumble1 = bloop_delay(kick_drum1, 22050, 0.8, 0.1);
-    bloop_generator *kick_drum_rumble2 = bloop_repeat(bloop_distortion(bloop_delay(bloop_average(2, kick_drum, kick_drum_rumble1), 11025, 0.7, 0.0), C(0.8), C(4.5)), 88200);
+    bloop_generator *kick_drum_rumble1 = bloop_delay(kick_drum1, LFO(1.0, 22050, 11025), C(0.8), C(0.1));
+    bloop_generator *kick_drum_rumble2 = bloop_repeat(bloop_distortion(bloop_delay(bloop_average(2, kick_drum, kick_drum_rumble1), LFO(1.0, 11025, 5000), LFO(32.0, 0.7, 0.2), LFO(32.0, 0.5, 0.4)), C(0.8), C(4.5)), 88200);
     bloop_generator *wobble2 = bloop_sine_wave(bloop_lfo(LFO(8.0, 24, 24), C(880), C(440.0)), bloop_lfo(C(128.0), C(0.2), LFO(2, 0.1, 0.05)));
     generator = bloop_average(2, kick_drum_rumble2, wobble2);
     sg_setup(&(sg_desc){

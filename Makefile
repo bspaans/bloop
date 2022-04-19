@@ -7,7 +7,7 @@ bloop:
 bloop_emscripten:
 	rm -rf out/wasm
 	mkdir -p out/wasm
-	emcc -D SOKOL_GLES2 bloop.c  -o out/wasm/bloop.html -lm -I./lib/sokol
+	emcc -D SOKOL_GLES2 src/*.c  -o out/wasm/bloop.html -lm -I./lib/sokol
 
 run: bloop
 	./out/linux/bloop

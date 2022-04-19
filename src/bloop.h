@@ -30,6 +30,8 @@ typedef struct bloop_generator{
     void *userData;
 } bloop_generator;
 
+bloop_generator* bloop_new_generator(float (*fn)(void*, int), void *userData);
+
 #define bloop_run(closure, tick) ((*closure->fn)(closure->userData, tick))
 
 typedef struct bloop_sine_wave_data {
@@ -72,10 +74,10 @@ typedef struct bloop_distortion_data {
 
 typedef struct bloop_delay_data {
     bloop_generator *input;
-    int delay_samples;
+    bloop_generator *delay_samples;
+    bloop_generator *factor;
+    bloop_generator *feedback;
     int ring_index;
-    float factor;
-    float feedback;
     float *ring;
 } bloop_delay_data;
 
@@ -106,7 +108,6 @@ float bloop_repeat_(void *value, int tick);
 float bloop_offset_(void *value, int tick);
 float bloop_average_(void *value, int tick);
 
-bloop_generator* bloop_new_generator(float (*fn)(void*, int), void *userData);
 bloop_generator *bloop_sine_wave(bloop_generator *pitch, bloop_generator *gain);
 bloop_generator *bloop_white_noise(bloop_generator *gain);
 bloop_generator *bloop_constant(float value);
@@ -114,7 +115,7 @@ bloop_generator *bloop_interpolation(float from, float to, int over);
 bloop_generator *bloop_adsr(float max_gain, float sustain, int attack_samples, int decay_samples, int sustain_samples, int release_samples);
 bloop_generator *bloop_lfo(bloop_generator *speed, bloop_generator *offset, bloop_generator *amount);
 bloop_generator *bloop_distortion(bloop_generator *input, bloop_generator *level, bloop_generator *gain);
-bloop_generator *bloop_delay(bloop_generator *input, int delay_samples, float factor, float feedback);
+bloop_generator *bloop_delay(bloop_generator *input, bloop_generator *delay_samples, bloop_generator *factor, bloop_generator *feedback);
 bloop_generator *bloop_repeat(bloop_generator *input, int every);
 bloop_generator *bloop_offset(bloop_generator *input, int offset);
 bloop_generator *bloop_average(int count, ...);
