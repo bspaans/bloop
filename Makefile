@@ -2,7 +2,7 @@
 bloop:
 	rm -rf out/linux
 	mkdir -p out/linux
-	gcc -D SOKOL_GLCORE33 src/*.c  -o out/linux/bloop -lm -lpthread -ldl -lGL $$(pkg-config --static --libs x11 xi xcursor) -lasound -I./lib/sokol
+	gcc -D SOKOL_GLCORE33 src/*.c -o out/linux/bloop -lm -lpthread -ldl -lGL $$(pkg-config --static --libs x11 xi xcursor) -lasound -I./lib/sokol -I./lib/Nuklear
 
 bloop_emscripten:
 	rm -rf out/wasm
