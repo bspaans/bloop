@@ -184,6 +184,37 @@ bloop_generator *bloop_distortion(bloop_generator *input, bloop_generator *level
     return bloop_new_generator(bloop_distortion_, v);
 }
 
+typedef struct bloop_delay_data {
+    bloop_generator *input;
+    int delay_samples;
+    int ring_index;
+    float factor;
+    float feedback;
+    float *ring;
+} bloop_delay_data;
+
+float bloop_delay_(void *value, int tick) {
+    bloop_delay_data *data = (bloop_delay_data *) value;
+    float s = bloop_run(data->input, tick);
+    float prev = data->ring[data->ring_index];
+    data->ring[data->ring_index] = s;
+    s += prev * data->factor;
+    data->ring[data->ring_index] += data->feedback * s;
+    data->ring_index = (data->ring_index + 1) % data->delay_samples;
+    return s;
+}
+
+bloop_generator *bloop_delay(bloop_generator *input, int delay_samples, float factor, float feedback) {
+    bloop_delay_data *v = malloc(sizeof(*v));
+    v->input = input;
+    v->delay_samples = delay_samples;
+    v->factor = factor;
+    v->feedback = feedback;
+    v->ring_index = 0;
+    v->ring = malloc(sizeof(float) * delay_samples);
+    return bloop_new_generator(bloop_delay_, v);
+}
+
 typedef struct bloop_repeat_data {
     bloop_generator *input;
     int every;
@@ -266,8 +297,10 @@ void init(void) {
     });
     generator = bloop_sine_wave(LFO(1.0, 440.0, 110.0), C(1.0)); 
     bloop_generator *kick_drum = bloop_distortion(bloop_sine_wave(bloop_interpolation(90, 36, 4000), bloop_adsr(1.0, 0.2, 500, 500, 4000, 2000)), bloop_interpolation(0.9, 0.2, 100), C(1.0));
+    bloop_generator *kick_drum_rumble1 = bloop_delay(kick_drum, 22050, 0.8, 0.1);
+    bloop_generator *kick_drum_rumble2 = bloop_repeat(bloop_distortion(bloop_delay(bloop_average(2, kick_drum, kick_drum_rumble1), 11025, 0.7, 0.8), C(0.8), C(4.5)), 88200);
     bloop_generator *wobble2 = bloop_sine_wave(bloop_lfo(LFO(8.0, 24, 24), C(880), C(440.0)), bloop_lfo(C(128.0), C(0.2), LFO(2, 0.1, 0.05)));
-    generator = bloop_average(2, bloop_repeat(kick_drum, 44100), wobble2);
+    generator = bloop_average(2, kick_drum_rumble2, wobble2);
     sg_setup(&(sg_desc){
         .context = sapp_sgcontext()
     });
@@ -296,7 +329,9 @@ sapp_desc sokol_main(int argc, char* argv[]) {
         .cleanup_cb = cleanup,
         .width = 400,
         .height = 300,
-        .window_title = "Clear Sample",
+        .window_title = "bloop",
     };
 }
 
+
+// TODO: delay, white noise, controlled pitch
