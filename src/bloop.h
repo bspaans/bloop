@@ -25,12 +25,27 @@
  *
  * To execute a bloop_generator to get its value, the bloop_run macro can be used.
  */
+
+enum bloop_generator_type {
+    BLOOP_SINE,
+    BLOOP_WHITE_NOISE,
+    BLOOP_INTERPOLATION,
+    BLOOP_CONSTANT,
+    BLOOP_ADSR,
+    BLOOP_LFO,
+    BLOOP_DISTORTION,
+    BLOOP_DELAY,
+    BLOOP_REPEAT,
+    BLOOP_OFFSET,
+    BLOOP_AVERAGE,
+};
 typedef struct bloop_generator{
     float (*fn)(void*, int);
+    enum bloop_generator_type type;
     void *userData;
 } bloop_generator;
 
-bloop_generator* bloop_new_generator(float (*fn)(void*, int), void *userData);
+bloop_generator* bloop_new_generator(float (*fn)(void*, int), enum bloop_generator_type type, void *userData);
 
 #define bloop_run(closure, tick) ((*closure->fn)(closure->userData, tick))
 

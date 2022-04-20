@@ -5,9 +5,10 @@
 #include <math.h>
 #include "bloop.h"
 
-bloop_generator* bloop_new_generator(float (*fn)(void*, int), void *userData) {
+bloop_generator* bloop_new_generator(float (*fn)(void*, int), enum bloop_generator_type type, void *userData) {
     bloop_generator *closure = malloc(sizeof(*closure));
     closure->fn = fn;
+    closure->type = type;
     closure->userData = userData;
     return closure;
 }
@@ -29,7 +30,7 @@ bloop_generator *bloop_sine_wave(bloop_generator *pitch, bloop_generator *gain) 
     bloop_sine_wave_data *v = malloc(sizeof(bloop_sine_wave_data));
     v->pitch = pitch;
     v->gain = gain;
-    return bloop_new_generator(bloop_sine_wave_, v);
+    return bloop_new_generator(bloop_sine_wave_, BLOOP_SINE, v);
 }
 
 
@@ -43,7 +44,7 @@ float bloop_white_noise_(void *value, int tick) {
 bloop_generator *bloop_white_noise(bloop_generator *gain) {
     bloop_white_noise_data *v = malloc(sizeof(*v));
     v->gain = gain;
-    return bloop_new_generator(bloop_white_noise_, v);
+    return bloop_new_generator(bloop_white_noise_, BLOOP_WHITE_NOISE, v);
 }
 
 
@@ -56,7 +57,7 @@ float bloop_constant_(void *value, int tick) {
 bloop_generator *bloop_constant(float value) {
     float *v = malloc(sizeof(float));
     *v = value;
-    return bloop_new_generator(bloop_constant_, v); 
+    return bloop_new_generator(bloop_constant_, BLOOP_CONSTANT, v); 
 }
 
 
@@ -75,7 +76,7 @@ bloop_generator *bloop_interpolation(float from, float to, int over) {
     v->from = from;
     v->to = to;
     v->over = over;
-    return bloop_new_generator(bloop_interpolation_, v);
+    return bloop_new_generator(bloop_interpolation_, BLOOP_INTERPOLATION, v);
 }
 
 
@@ -114,7 +115,7 @@ bloop_generator *bloop_adsr(float max_gain, float sustain, int attack_samples, i
     v->decay_samples = decay_samples;
     v->sustain_samples = sustain_samples;
     v->release_samples = release_samples;
-    return bloop_new_generator(bloop_adsr_, v);
+    return bloop_new_generator(bloop_adsr_, BLOOP_ADSR, v);
 }
 
 
@@ -135,7 +136,7 @@ bloop_generator *bloop_lfo(bloop_generator *speed, bloop_generator *offset, bloo
     v->speed = speed;
     v->offset = offset;
     v->amount = amount;
-    return bloop_new_generator(bloop_lfo_, v);
+    return bloop_new_generator(bloop_lfo_, BLOOP_LFO, v);
 }
 
 
@@ -157,7 +158,7 @@ bloop_generator *bloop_distortion(bloop_generator *input, bloop_generator *level
     v->input = input;
     v->level = level;
     v->gain = gain;
-    return bloop_new_generator(bloop_distortion_, v);
+    return bloop_new_generator(bloop_distortion_, BLOOP_DISTORTION, v);
 }
 
 
@@ -189,7 +190,7 @@ bloop_generator *bloop_delay(bloop_generator *input, bloop_generator *delay_samp
     v->feedback = feedback;
     v->ring_index = 0;
     v->ring = malloc(sizeof(float) * 8 * SAMPLE_RATE); // allocate 8 seconds 
-    return bloop_new_generator(bloop_delay_, v);
+    return bloop_new_generator(bloop_delay_, BLOOP_DELAY, v);
 }
 
 
@@ -203,7 +204,7 @@ bloop_generator *bloop_repeat(bloop_generator *input, int every) {
     bloop_repeat_data *v = malloc(sizeof(*v));
     v->input = input;
     v->every = every;
-    return bloop_new_generator(bloop_repeat_, v);
+    return bloop_new_generator(bloop_repeat_, BLOOP_REPEAT, v);
 }
 
 
@@ -221,7 +222,7 @@ bloop_generator *bloop_offset(bloop_generator *input, int offset) {
     bloop_offset_data *v = malloc(sizeof(*v));
     v->input = input;
     v->offset = offset;
-    return bloop_new_generator(bloop_offset_, v);
+    return bloop_new_generator(bloop_offset_, BLOOP_OFFSET, v);
 }
 
 
@@ -244,6 +245,6 @@ bloop_generator *bloop_average(int count, ...) {
     for (int i = 0; i < count; i++) {
         v->inputs[i] = va_arg(args, bloop_generator*);
     }
-    return bloop_new_generator(bloop_average_, v);
+    return bloop_new_generator(bloop_average_, BLOOP_AVERAGE, v);
 }
 

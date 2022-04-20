@@ -1,4 +1,5 @@
 #include "bloop.h"
+#include "ui.h"
 #define SOKOL_IMPL
 #include <sokol_audio.h>
 #include <stdio.h>
@@ -57,9 +58,7 @@ void frame(void) {
     //float g = pass_action.colors[0].value.g + 0.01f;
     //pass_action.colors[0].value.g = (g > 1.0f) ? 0.0f : g;
     struct nk_context *ctx = snk_new_frame();
-    if (nk_begin(ctx, "You're blooping it", nk_rect(50, 50, 220, 220), NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE)) {
-    }
-    nk_end(ctx);
+    node_editor(ctx);
     sg_begin_default_pass(&pass_action, sapp_width(), sapp_height());
     snk_render(sapp_width(), sapp_height());
     sg_end_pass();
