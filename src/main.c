@@ -66,6 +66,21 @@ void frame(void) {
     sg_commit();
 }
 
+void event_handler(const struct sapp_event *event) {
+    snk_handle_event(event);
+    switch (event->type) {
+        case SAPP_EVENTTYPE_MOUSE_DOWN:
+            break;
+        case SAPP_EVENTTYPE_MOUSE_UP:
+            break;
+        case SAPP_EVENTTYPE_MOUSE_MOVE: 
+            break;
+        default:
+            break;
+    }
+    // TODO sapp_consume_event?
+}
+
 void cleanup(void) {
     snk_shutdown();
     saudio_shutdown();
@@ -77,6 +92,7 @@ sapp_desc sokol_main(int argc, char* argv[]) {
         .init_cb = init,
         .frame_cb = frame,
         .cleanup_cb = cleanup,
+        .event_cb = event_handler,
         .width = 800,
         .height = 600,
         .window_title = "bloop",
