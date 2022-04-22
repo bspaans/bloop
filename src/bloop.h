@@ -46,6 +46,7 @@ typedef struct bloop_generator{
 } bloop_generator;
 
 bloop_generator* bloop_new_generator(float (*fn)(void*, int), enum bloop_generator_type type, void *userData);
+int bloop_generator_depth(bloop_generator *g);
 
 #define bloop_run(closure, tick) ((*closure->fn)(closure->userData, tick))
 

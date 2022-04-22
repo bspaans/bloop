@@ -293,9 +293,16 @@ node_editor(struct nk_context *ctx)
 }
 
 
+int add_node(struct node_editor *editor, bloop_generator *g, char *title, int inputs) {
+    int depth = bloop_generator_depth(g) - 1;
+    int width = 100;
+    int margin = 10;
+    return node_editor_add(editor, title, nk_rect(depth * (width + margin), 10, width, 220), nk_rgb(255, 0, 0), inputs, 1);
+}
+
 int bloop_sine_wave_to_nodes(struct node_editor *editor, bloop_generator *g) {
     bloop_sine_wave_data *data = g->userData;
-    int sine_id = node_editor_add(editor, "SIN", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 2, 1);
+    int sine_id = add_node(editor, g, "SINE", 2);
     if (data->pitch != NULL) {
         bloop_generator_to_nodes_and_link(editor, data->pitch, sine_id, 0);
     } 
@@ -307,7 +314,7 @@ int bloop_sine_wave_to_nodes(struct node_editor *editor, bloop_generator *g) {
 
 int bloop_white_noise_to_nodes(struct node_editor *editor, bloop_generator *g) {
     bloop_white_noise_data *data = g->userData;
-    int wn_id = node_editor_add(editor, "NOISE", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 1, 1);
+    int wn_id = add_node(editor, g, "NOISE", 1);
     if (data->gain != NULL) {
         bloop_generator_to_nodes_and_link(editor, data->gain, wn_id, 0);
     }
@@ -316,7 +323,7 @@ int bloop_white_noise_to_nodes(struct node_editor *editor, bloop_generator *g) {
 
 int bloop_average_to_nodes(struct node_editor *editor, bloop_generator *g) {
     bloop_average_data *data = g->userData;
-    int avg_id = node_editor_add(editor, "AVG", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 8, 1);
+    int avg_id = add_node(editor, g, "AVG", 8);
     for (int i = 0; i < data->count; i++) {
         bloop_generator_to_nodes_and_link(editor, data->inputs[i], avg_id, i);
     }
@@ -324,13 +331,12 @@ int bloop_average_to_nodes(struct node_editor *editor, bloop_generator *g) {
 }
 
 int bloop_interpolation_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    int id = node_editor_add(editor, "INTERPOLATION", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 8, 1);
-    return id;
+    return add_node(editor, g, "INTERPOLATION", 0);
 }
 
 int bloop_lfo_to_nodes(struct node_editor *editor, bloop_generator *g) {
     bloop_lfo_data *data = g->userData;
-    int lfo_id = node_editor_add(editor, "LFO", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 3, 1);
+    int lfo_id = add_node(editor, g, "LFO", 3);
     if (data->speed != NULL) {
         bloop_generator_to_nodes_and_link(editor, data->speed, lfo_id, 0);
     }
@@ -345,7 +351,7 @@ int bloop_lfo_to_nodes(struct node_editor *editor, bloop_generator *g) {
 
 int bloop_repeat_to_nodes(struct node_editor *editor, bloop_generator *g) {
     bloop_repeat_data *data = g->userData;
-    int repeat_id = node_editor_add(editor, "REPEAT", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 1, 1);
+    int repeat_id = add_node(editor, g, "REPEAT", 1);
     if (data->input != NULL) {
         bloop_generator_to_nodes_and_link(editor, data->input, repeat_id, 0);
     }
@@ -354,7 +360,7 @@ int bloop_repeat_to_nodes(struct node_editor *editor, bloop_generator *g) {
 
 int bloop_offset_to_nodes(struct node_editor *editor, bloop_generator *g) {
     bloop_offset_data *data = g->userData;
-    int id = node_editor_add(editor, "OFFSET", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 1, 1);
+    int id = add_node(editor, g, "OFFSET", 1);
     if (data->input != NULL) {
         bloop_generator_to_nodes_and_link(editor, data->input, id, 0);
     }
@@ -363,7 +369,7 @@ int bloop_offset_to_nodes(struct node_editor *editor, bloop_generator *g) {
 
 int bloop_delay_to_nodes(struct node_editor *editor, bloop_generator *g) {
     bloop_delay_data *data = g->userData;
-    int delay_id = node_editor_add(editor, "DELAY", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 4, 1);
+    int delay_id = add_node(editor, g, "DELAY", 4);
     if (data->input != NULL) {
         bloop_generator_to_nodes_and_link(editor, data->input, delay_id, 0);
     }
@@ -381,7 +387,7 @@ int bloop_delay_to_nodes(struct node_editor *editor, bloop_generator *g) {
 
 int bloop_distortion_to_nodes(struct node_editor *editor, bloop_generator *g) {
     bloop_distortion_data *data = g->userData;
-    int dist_id = node_editor_add(editor, "DISTORTION", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 3, 1);
+    int dist_id = add_node(editor, g, "DELAY", 3);
     if (data->input != NULL) {
         bloop_generator_to_nodes_and_link(editor, data->input, dist_id, 0);
     }
@@ -395,9 +401,7 @@ int bloop_distortion_to_nodes(struct node_editor *editor, bloop_generator *g) {
 }
 
 int bloop_adsr_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    bloop_adsr_data *data = g->userData;
-    int id = node_editor_add(editor, "ADSR", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 3, 1);
-    return id;
+    return add_node(editor, g, "ADSR", 0);
 }
 
 

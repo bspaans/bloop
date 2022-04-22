@@ -13,6 +13,69 @@ bloop_generator* bloop_new_generator(float (*fn)(void*, int), enum bloop_generat
     return closure;
 }
 
+#define max(x, y) (x > y ? x : y)
+
+int bloop_generator_depth(bloop_generator *g) {
+
+    bloop_sine_wave_data *sine_d; 
+    bloop_white_noise_data *noise_d;
+    bloop_lfo_data *lfo_d;
+    bloop_distortion_data *dist_d;
+    bloop_delay_data *delay_d;
+    bloop_repeat_data *repeat_d;
+    bloop_offset_data *offset_d;
+    bloop_average_data *average_d;
+
+    switch (g->type) {
+        case BLOOP_CONSTANT:
+            return 1;
+        case BLOOP_SINE:
+            sine_d = g->userData;
+            return 1 + max(bloop_generator_depth(sine_d->pitch), bloop_generator_depth(sine_d->gain));
+        case BLOOP_WHITE_NOISE: 
+            noise_d = g->userData;
+            return 1 + bloop_generator_depth(noise_d->gain);
+        case BLOOP_INTERPOLATION: 
+            return 1;
+        case BLOOP_ADSR:
+            return 1;
+        case BLOOP_LFO:
+            lfo_d = g->userData;
+            return 1 + max(max(bloop_generator_depth(lfo_d->speed), 
+                               bloop_generator_depth(lfo_d->offset)), 
+                               bloop_generator_depth(lfo_d->amount));
+        case BLOOP_DISTORTION: 
+            dist_d = g->userData;
+            return 1 + max(max(bloop_generator_depth(dist_d->input), 
+                               bloop_generator_depth(dist_d->level)), 
+                               bloop_generator_depth(dist_d->gain));
+        case BLOOP_DELAY:
+            delay_d = g->userData;
+            return 1 + max(max(max(bloop_generator_depth(delay_d->input), 
+                                   bloop_generator_depth(delay_d->delay_samples)), 
+                                   bloop_generator_depth(delay_d->factor)),
+                                   bloop_generator_depth(delay_d->feedback));
+
+        case BLOOP_REPEAT:
+            repeat_d = g->userData;
+            return 1 + bloop_generator_depth(repeat_d->input);
+        case BLOOP_OFFSET:
+            offset_d = g->userData;
+            return 1 + bloop_generator_depth(offset_d->input);
+        case BLOOP_AVERAGE:
+            average_d = g->userData;
+            int m = 0;
+            for (int i = 0; i < average_d->count; i++) {
+                int n = bloop_generator_depth(average_d->inputs[i]);
+                if (n > m) {
+                    m = n;
+                }
+            }
+            return 1 + m;
+    }
+    return 0;
+}
+
 int SAMPLE_RATE = 44100;
 
 
