@@ -2,15 +2,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 #include <math.h>
 #include "bloop.h"
 
-bloop_generator* bloop_new_generator(float (*fn)(bloop_generator *, void*, int), enum bloop_generator_type type, void *userData) {
+bloop_generator* bloop_new_generator(float (*fn)(bloop_generator *, void*, int), enum bloop_generator_type type, char *title, void *userData) {
     bloop_generator *closure = malloc(sizeof(*closure));
     closure->fn = fn;
     closure->type = type;
     closure->userData = userData;
     closure->input_count = 0;
+    strncpy(closure->title, title, BLOOP_MAX_TITLE);
     for (int i = 0; i < BLOOP_MAX_INPUTS; i++) {
         closure->inputs[i] = NULL;
     }
@@ -46,7 +48,7 @@ float bloop_sine_wave_(bloop_generator *g, void *value, int tick) {
 
 bloop_generator *bloop_sine_wave(bloop_generator *pitch, bloop_generator *gain) {
     bloop_sine_wave_data *v = malloc(sizeof(bloop_sine_wave_data));
-    bloop_generator *g = bloop_new_generator(bloop_sine_wave_, BLOOP_SINE, v);
+    bloop_generator *g = bloop_new_generator(bloop_sine_wave_, BLOOP_SINE, "SINE", v);
     g->input_count = 2;
     g->inputs[SINE_WAVE_PITCH] = pitch;
     g->inputs[SINE_WAVE_GAIN] = gain;
@@ -61,7 +63,7 @@ float bloop_white_noise_(bloop_generator *g, void *value, int tick) {
 }
 
 bloop_generator *bloop_white_noise(bloop_generator *gain) {
-    bloop_generator *g = bloop_new_generator(bloop_white_noise_, BLOOP_WHITE_NOISE, NULL);
+    bloop_generator *g = bloop_new_generator(bloop_white_noise_, BLOOP_WHITE_NOISE, "NOISE", NULL);
     g->input_count = 1;
     g->inputs[WHITE_NOISE_GAIN] = gain;
     return g;
@@ -77,7 +79,7 @@ float bloop_constant_(bloop_generator *g, void *value, int tick) {
 bloop_generator *bloop_constant(float value) {
     float *v = malloc(sizeof(float));
     *v = value;
-    return bloop_new_generator(bloop_constant_, BLOOP_CONSTANT, v); 
+    return bloop_new_generator(bloop_constant_, BLOOP_CONSTANT, "CONSTANT", v); 
 }
 
 
@@ -96,7 +98,7 @@ bloop_generator *bloop_interpolation(float from, float to, int over) {
     v->from = from;
     v->to = to;
     v->over = over;
-    return bloop_new_generator(bloop_interpolation_, BLOOP_INTERPOLATION, v);
+    return bloop_new_generator(bloop_interpolation_, BLOOP_INTERPOLATION, "INTERPOLATION", v);
 }
 
 
@@ -135,7 +137,7 @@ bloop_generator *bloop_adsr(float max_gain, float sustain, int attack_samples, i
     v->decay_samples = decay_samples;
     v->sustain_samples = sustain_samples;
     v->release_samples = release_samples;
-    return bloop_new_generator(bloop_adsr_, BLOOP_ADSR, v);
+    return bloop_new_generator(bloop_adsr_, BLOOP_ADSR, "ADSR", v);
 }
 
 
@@ -151,7 +153,7 @@ float bloop_lfo_(bloop_generator *g, void *value, int tick) {
 }
 
 bloop_generator *bloop_lfo(bloop_generator *speed, bloop_generator *offset, bloop_generator *amount) {
-    bloop_generator *g = bloop_new_generator(bloop_lfo_, BLOOP_LFO, NULL);
+    bloop_generator *g = bloop_new_generator(bloop_lfo_, BLOOP_LFO, "LFO", NULL);
     g->input_count = 3;
     g->inputs[BLOOP_LFO_SPEED] = speed;
     g->inputs[BLOOP_LFO_OFFSET] = offset;
@@ -173,7 +175,7 @@ float bloop_distortion_(bloop_generator *g, void *value, int tick) {
 }
 
 bloop_generator *bloop_distortion(bloop_generator *input, bloop_generator *level, bloop_generator *gain) {
-    bloop_generator *g = bloop_new_generator(bloop_distortion_, BLOOP_DISTORTION, NULL);
+    bloop_generator *g = bloop_new_generator(bloop_distortion_, BLOOP_DISTORTION, "DISTORTION", NULL);
     g->input_count = 3;
     g->inputs[BLOOP_DISTORTION_INPUT] = input;
     g->inputs[BLOOP_DISTORTION_LEVEL] = level;
@@ -206,7 +208,7 @@ bloop_generator *bloop_delay(bloop_generator *input, bloop_generator *delay_samp
     bloop_delay_data *v = malloc(sizeof(*v));
     v->ring_index = 0;
     v->ring = malloc(sizeof(float) * 8 * SAMPLE_RATE); // allocate 8 seconds 
-    bloop_generator *g = bloop_new_generator(bloop_delay_, BLOOP_DELAY, v);
+    bloop_generator *g = bloop_new_generator(bloop_delay_, BLOOP_DELAY, "DELAY", v);
     g->input_count = 4;
     g->inputs[BLOOP_DELAY_INPUT] = input;
     g->inputs[BLOOP_DELAY_SAMPLES] = delay_samples;
@@ -225,7 +227,7 @@ float bloop_repeat_(bloop_generator *g, void *value, int tick) {
 bloop_generator *bloop_repeat(bloop_generator *input, int every) {
     bloop_repeat_data *v = malloc(sizeof(*v));
     v->every = every;
-    bloop_generator *g = bloop_new_generator(bloop_repeat_, BLOOP_REPEAT, v);
+    bloop_generator *g = bloop_new_generator(bloop_repeat_, BLOOP_REPEAT, "REPEAT", v);
     g->input_count = 1;
     g->inputs[BLOOP_REPEAT_INPUT] = input;
     return g;
@@ -245,7 +247,7 @@ float bloop_offset_(bloop_generator *g, void *value, int tick) {
 bloop_generator *bloop_offset(bloop_generator *input, int offset) {
     bloop_offset_data *v = malloc(sizeof(*v));
     v->offset = offset;
-    bloop_generator *g = bloop_new_generator(bloop_offset_, BLOOP_OFFSET, v);
+    bloop_generator *g = bloop_new_generator(bloop_offset_, BLOOP_OFFSET, "OFFSET", v);
     g->input_count = 1;
     g->inputs[BLOOP_OFFSET_INPUT] = input;
     return g;
@@ -262,7 +264,7 @@ float bloop_average_(bloop_generator *g, void *value, int tick) {
 }
 
 bloop_generator *bloop_average(int count, ...) {
-    bloop_generator *g = bloop_new_generator(bloop_average_, BLOOP_AVERAGE, NULL);
+    bloop_generator *g = bloop_new_generator(bloop_average_, BLOOP_AVERAGE, "AVERAGE", NULL);
     g->input_count = count;
     va_list args;
     va_start(args, count);

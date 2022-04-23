@@ -299,84 +299,8 @@ int add_node(struct node_editor *editor, bloop_generator *g, char *title, int in
     int depth = bloop_generator_depth(g) - 1;
     int width = 100;
     int margin = 40;
-    return node_editor_add(editor, title, nk_rect(depth * (width + margin) + margin, margin, width, 220), nk_rgb(255, 0, 0), inputs, 1);
+    return node_editor_add(editor, g->title, nk_rect(depth * (width + margin) + margin, margin, width, 220), nk_rgb(255, 0, 0), inputs, 1);
 }
-
-int bloop_sine_wave_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    int sine_id = add_node(editor, g, "SINE", 2);
-    for (int i = 0; i < g->input_count; i++) {
-        bloop_generator_to_nodes_and_link(editor, g->inputs[i], sine_id, i);
-    }
-    return sine_id;
-}
-
-int bloop_white_noise_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    int wn_id = add_node(editor, g, "NOISE", 1);
-    for (int i = 0; i < g->input_count; i++) {
-        bloop_generator_to_nodes_and_link(editor, g->inputs[i], wn_id, i);
-    }
-    return wn_id;
-}
-
-int bloop_average_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    int avg_id = add_node(editor, g, "AVG", 8);
-    for (int i = 0; i < g->input_count; i++) {
-        bloop_generator_to_nodes_and_link(editor, g->inputs[i], avg_id, i);
-    }
-    return avg_id;
-}
-
-int bloop_interpolation_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    return add_node(editor, g, "INTERPOLATION", 0);
-}
-
-int bloop_lfo_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    int lfo_id = add_node(editor, g, "LFO", 3);
-    for (int i = 0; i < g->input_count; i++) {
-        bloop_generator_to_nodes_and_link(editor, g->inputs[i], lfo_id, i);
-    }
-    return lfo_id;
-}
-
-int bloop_repeat_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    bloop_repeat_data *data = g->userData;
-    int repeat_id = add_node(editor, g, "REPEAT", 1);
-    for (int i = 0; i < g->input_count; i++) {
-        bloop_generator_to_nodes_and_link(editor, g->inputs[i], repeat_id, i);
-    }
-    return repeat_id;
-}
-
-int bloop_offset_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    bloop_offset_data *data = g->userData;
-    int id = add_node(editor, g, "OFFSET", 1);
-    for (int i = 0; i < g->input_count; i++) {
-        bloop_generator_to_nodes_and_link(editor, g->inputs[i], id, i);
-    }
-    return id;
-}
-
-int bloop_delay_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    bloop_delay_data *data = g->userData;
-    int delay_id = add_node(editor, g, "DELAY", 4);
-    for (int i = 0; i < g->input_count; i++) {
-        bloop_generator_to_nodes_and_link(editor, g->inputs[i], delay_id, i);
-    }
-    return delay_id;
-}
-
-int bloop_distortion_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    int dist_id = add_node(editor, g, "DISTORTION", 3);
-    for (int i = 0; i < g->input_count; i++) {
-        bloop_generator_to_nodes_and_link(editor, g->inputs[i], dist_id, i);
-    }
-    return dist_id;
-}
-
-int bloop_adsr_to_nodes(struct node_editor *editor, bloop_generator *g) {
-    return add_node(editor, g, "ADSR", 0);
-}
-
 
 int bloop_generator_to_nodes_and_link(struct node_editor *editor, bloop_generator *g, int output_id, int output_slot) {
     int id = bloop_generator_to_nodes(editor, g);
@@ -391,33 +315,12 @@ int bloop_generator_to_nodes(struct node_editor *editor, bloop_generator *g) {
     if (g == NULL) {
         return -1;
     }
-
-    switch (g->type) {
-        case BLOOP_SINE:
-            return bloop_sine_wave_to_nodes(editor, g);
-        case BLOOP_WHITE_NOISE:
-            return bloop_white_noise_to_nodes(editor, g);
-        case BLOOP_INTERPOLATION:
-            return bloop_interpolation_to_nodes(editor, g);
-        case BLOOP_CONSTANT:
-            break;
-        case BLOOP_ADSR:
-            return bloop_adsr_to_nodes(editor, g);
-        case BLOOP_LFO:
-            return bloop_lfo_to_nodes(editor, g);
-        case BLOOP_DISTORTION:
-            return bloop_distortion_to_nodes(editor, g);
-        case BLOOP_DELAY:
-            return bloop_delay_to_nodes(editor, g);
-        case BLOOP_REPEAT:
-            return bloop_repeat_to_nodes(editor, g);
-        case BLOOP_OFFSET:
-            return bloop_offset_to_nodes(editor, g);
-        case BLOOP_AVERAGE:
-            return bloop_average_to_nodes(editor, g);
-        default:
-            return -1;
+    int id = add_node(editor, g, g->title, g->input_count);
+    for (int i = 0; i < g->input_count; i++) {
+        if (g->inputs[i] != NULL) {
+            bloop_generator_to_nodes_and_link(editor, g->inputs[i], id, i);
+        }
     }
-    return -1;
+    return id;
 }
 

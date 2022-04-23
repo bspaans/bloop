@@ -35,8 +35,8 @@ struct node_linking {
 
 struct node_editor {
     int initialized;
-    struct node node_buf[32];
-    struct node_link links[64];
+    struct node node_buf[64];
+    struct node_link links[128];
     struct node *begin;
     struct node *end;
     int node_count;

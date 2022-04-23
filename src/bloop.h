@@ -40,6 +40,7 @@ enum bloop_generator_type {
     BLOOP_AVERAGE,
 };
 #define BLOOP_MAX_INPUTS 8
+#define BLOOP_MAX_TITLE 16
 typedef struct bloop_generator{
     float (*fn)(struct bloop_generator *, void*, int);
     enum bloop_generator_type type;
@@ -47,9 +48,10 @@ typedef struct bloop_generator{
 
     int input_count;
     struct bloop_generator *inputs[BLOOP_MAX_INPUTS];
+    char title[BLOOP_MAX_TITLE];
 } bloop_generator;
 
-bloop_generator* bloop_new_generator(float (*fn)(bloop_generator *, void*, int), enum bloop_generator_type type, void *userData);
+bloop_generator* bloop_new_generator(float (*fn)(bloop_generator *, void*, int), enum bloop_generator_type type, char *title, void *userData);
 int bloop_generator_depth(bloop_generator *g);
 
 #define bloop_run(closure, tick) ((*closure->fn)(closure, closure->userData, tick))
