@@ -92,8 +92,8 @@ sapp_desc sokol_main(int argc, char* argv[]) {
         .frame_cb = frame,
         .cleanup_cb = cleanup,
         .event_cb = event_handler,
-        .width = 800,
-        .height = 600,
+        .width = 1024,
+        .height = 800,
         .window_title = "bloop",
     };
 }

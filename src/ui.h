@@ -49,9 +49,14 @@ struct node_editor {
 };
 static struct node_editor nodeEditor;
 
+typedef struct add_node_result {
+    int id;
+    int children_left;
+    int children_right;
+} add_node_result;
 
-int bloop_generator_to_nodes_and_link(struct node_editor *editor, bloop_generator *g, int output_id, int output_slot);
-int bloop_generator_to_nodes(struct node_editor *editor, bloop_generator *g);
+add_node_result *bloop_generator_to_nodes_and_link(struct node_editor *editor, bloop_generator *g, int output_id, int output_slot, int x);
+add_node_result *bloop_generator_to_nodes(struct node_editor *editor, bloop_generator *g, int x);
 int node_editor(struct nk_context *ctx);
 
 extern bloop_generator *generator;

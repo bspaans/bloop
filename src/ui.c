@@ -1,5 +1,6 @@
 #include "ui.h"
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
@@ -85,7 +86,7 @@ node_editor_init(struct node_editor *editor)
     memset(editor, 0, sizeof(*editor));
     editor->begin = NULL;
     editor->end = NULL;
-    bloop_generator_to_nodes(editor, generator);
+    bloop_generator_to_nodes(editor, generator, 600);
     /*
     node_editor_add(editor, "Source", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 0, 1);
     node_editor_add(editor, "Source", nk_rect(40, 260, 180, 220), nk_rgb(0, 255, 0), 0, 1);
@@ -111,7 +112,7 @@ node_editor(struct nk_context *ctx)
         nodeEditor.initialized = 1;
     }
 
-    if (nk_begin(ctx, "NodeEdit", nk_rect(0, 0, 800, 600),
+    if (nk_begin(ctx, "NodeEdit", nk_rect(0, 0, 1024, 800),
         NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE))
     {
         /* allocate complete window space */
@@ -295,32 +296,42 @@ node_editor(struct nk_context *ctx)
 }
 
 
-int add_node(struct node_editor *editor, bloop_generator *g, char *title, int inputs) {
-    int depth = bloop_generator_depth(g) - 1;
-    int width = 100;
-    int margin = 40;
-    return node_editor_add(editor, g->title, nk_rect(depth * (width + margin) + margin, margin, width, 220), nk_rgb(255, 0, 0), inputs, 1);
+int add_node(struct node_editor *editor, bloop_generator *g, char *title, int inputs, int x) {
+    return node_editor_add(editor, g->title, nk_rect(x, 100, 100, 100), nk_rgb(255, 0, 0), inputs, 1);
 }
 
-int bloop_generator_to_nodes_and_link(struct node_editor *editor, bloop_generator *g, int output_id, int output_slot) {
-    int id = bloop_generator_to_nodes(editor, g);
-    if (id >= 0) {
-        node_editor_link(editor, id, 0, output_id, output_slot);
+add_node_result *bloop_generator_to_nodes_and_link(struct node_editor *editor, bloop_generator *g, int output_id, int output_slot, int x) {
+    add_node_result *added = bloop_generator_to_nodes(editor, g, x);
+    if (added != NULL) {
+        node_editor_link(editor, added->id, 0, output_id, output_slot);
     }
-    return output_slot;
+    return added;
 }
 
-int bloop_generator_to_nodes(struct node_editor *editor, bloop_generator *g) {
+add_node_result *bloop_generator_to_nodes(struct node_editor *editor, bloop_generator *g, int x) {
 
     if (g == NULL) {
-        return -1;
+        return NULL;
     }
-    int id = add_node(editor, g, g->title, g->input_count);
+    int id = add_node(editor, g, g->title, g->input_count, x);
+    int children_left = g->input_count / 2;
+    int children_right = g->input_count - children_left;
     for (int i = 0; i < g->input_count; i++) {
         if (g->inputs[i] != NULL) {
-            bloop_generator_to_nodes_and_link(editor, g->inputs[i], id, i);
+            add_node_result *child_result = bloop_generator_to_nodes_and_link(editor, g->inputs[i], id, i, x - 140);
+            if (i < g->input_count / 2) {
+                children_left += child_result->children_left + child_result->children_right;
+            } else {
+                children_right += child_result->children_left + child_result->children_right;
+            }
+
         }
     }
-    return id;
+    add_node_result *result = malloc(sizeof(*result));
+    result->id = id;
+    result->children_left = children_left;
+    result->children_right = children_right;
+    editor->node_buf[id].bounds.y = children_left * 120;
+    return result;
 }
 
