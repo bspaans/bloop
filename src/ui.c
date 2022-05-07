@@ -86,7 +86,8 @@ node_editor_init(struct node_editor *editor)
     memset(editor, 0, sizeof(*editor));
     editor->begin = NULL;
     editor->end = NULL;
-    bloop_generator_to_nodes(editor, generator, 600);
+    bloop_calculate_layout(generator);
+    bloop_generator_to_nodes(editor, generator);
     /*
     node_editor_add(editor, "Source", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 0, 1);
     node_editor_add(editor, "Source", nk_rect(40, 260, 180, 220), nk_rgb(0, 255, 0), 0, 1);
@@ -296,42 +297,27 @@ node_editor(struct nk_context *ctx)
 }
 
 
-int add_node(struct node_editor *editor, bloop_generator *g, char *title, int inputs, int x) {
-    return node_editor_add(editor, g->title, nk_rect(x, 100, 100, 100), nk_rgb(255, 0, 0), inputs, 1);
+int add_node(struct node_editor *editor, bloop_generator *g, char *title, int inputs) {
+    return node_editor_add(editor, g->title, nk_rect(g->x * 180, g->y * 110, 100, 100), nk_rgb(255, 0, 0), inputs, 1);
 }
 
-add_node_result *bloop_generator_to_nodes_and_link(struct node_editor *editor, bloop_generator *g, int output_id, int output_slot, int x) {
-    add_node_result *added = bloop_generator_to_nodes(editor, g, x);
-    if (added != NULL) {
-        node_editor_link(editor, added->id, 0, output_id, output_slot);
-    }
+int bloop_generator_to_nodes_and_link(struct node_editor *editor, bloop_generator *g, int output_id, int output_slot) {
+    int added = bloop_generator_to_nodes(editor, g);
+    node_editor_link(editor, added, 0, output_id, output_slot);
     return added;
 }
 
-add_node_result *bloop_generator_to_nodes(struct node_editor *editor, bloop_generator *g, int x) {
+int bloop_generator_to_nodes(struct node_editor *editor, bloop_generator *g) {
 
     if (g == NULL) {
-        return NULL;
+        return -1;
     }
-    int id = add_node(editor, g, g->title, g->input_count, x);
-    int children_left = g->input_count / 2;
-    int children_right = g->input_count - children_left;
+    int id = add_node(editor, g, g->title, g->input_count);
     for (int i = 0; i < g->input_count; i++) {
         if (g->inputs[i] != NULL) {
-            add_node_result *child_result = bloop_generator_to_nodes_and_link(editor, g->inputs[i], id, i, x - 140);
-            if (i < g->input_count / 2) {
-                children_left += child_result->children_left + child_result->children_right;
-            } else {
-                children_right += child_result->children_left + child_result->children_right;
-            }
-
+            bloop_generator_to_nodes_and_link(editor, g->inputs[i], id, i);
         }
     }
-    add_node_result *result = malloc(sizeof(*result));
-    result->id = id;
-    result->children_left = children_left;
-    result->children_right = children_right;
-    editor->node_buf[id].bounds.y = children_left * 120;
-    return result;
+    return id;
 }
 

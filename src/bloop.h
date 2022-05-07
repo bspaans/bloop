@@ -49,6 +49,10 @@ typedef struct bloop_generator{
     int input_count;
     struct bloop_generator *inputs[BLOOP_MAX_INPUTS];
     char title[BLOOP_MAX_TITLE];
+
+    int x;
+    int y;
+    int modx;
 } bloop_generator;
 
 bloop_generator* bloop_new_generator(float (*fn)(bloop_generator *, void*, int), enum bloop_generator_type type, char *title, void *userData);
@@ -135,6 +139,9 @@ bloop_generator *bloop_delay(bloop_generator *input, bloop_generator *delay_samp
 bloop_generator *bloop_repeat(bloop_generator *input, int every);
 bloop_generator *bloop_offset(bloop_generator *input, int offset);
 bloop_generator *bloop_average(int count, ...);
+
+// Calculate the x,y for each generator.
+void bloop_calculate_layout(bloop_generator *g);
 
 #define C(c) (bloop_constant(c))
 #define LFO(speed, offset, amount) (bloop_lfo(bloop_constant(speed), bloop_constant(offset), bloop_constant(amount)))

@@ -274,3 +274,99 @@ bloop_generator *bloop_average(int count, ...) {
     return g;
 }
 
+
+#define BLOOP_MAX_LAYOUT_DEPTH 100
+
+__bloop_move_right(bloop_generator *g, int n) {
+    g->x += n;
+    for (int i = 0; i < g->input_count; i++) {
+        if (g->inputs[i] != NULL) {
+            __bloop_move_right(g->inputs[i], n);
+        }
+    }
+
+}
+
+int __bloop_calculate_layout(bloop_generator *g, int depth, int *nexts, int *offset) {
+    if (depth >= BLOOP_MAX_LAYOUT_DEPTH - 1) {
+        return depth;
+    }
+    int max_depth = depth;
+    int input_count = 0;
+    for (int i = 0; i < g->input_count; i++) {
+        if (g->inputs[i] != NULL) {
+            input_count++;
+            int d = __bloop_calculate_layout(g->inputs[i], depth + 1, nexts, offset);
+            if (d > max_depth) {
+                max_depth = d;
+            }
+        }
+    }
+
+    g->x = depth;
+
+    int place;
+    if (input_count == 0) {
+        place = nexts[depth];
+        g->y = place;
+    } else if (input_count == 1) {
+        // find first input
+        for (int i = 0; i < g->input_count; i++) {
+            if (g->inputs[i] != NULL) {
+                place = g->inputs[i]->y - 1;
+                break;
+            }
+        }
+    } else {
+        // find first input
+        int first = 0;
+        for (int i = 0; i < g->input_count; i++) {
+            if (g->inputs[i] != NULL) {
+                first = i;
+                break;
+            }
+        }
+        // find last input
+        int last = 0;
+        for (int i = g->input_count; i >= 0; i--) {
+            if (g->inputs[i] != NULL) {
+                last = i;
+                break;
+            }
+        }
+        int s = g->inputs[first]->y + g->inputs[last]->y;
+        place = s / 2;
+    }
+
+    offset[depth]  = (offset[depth] > nexts[depth] - place) ? offset[depth] : (nexts[depth] - place);
+
+    if (g->input_count != 0) {
+        g->y = place + offset[depth];
+    }
+
+    nexts[depth] += 2;
+    g->modx = offset[depth];
+    return max_depth;
+}
+
+void __bloop_add_mods_and_reverse_x(bloop_generator *g, int modsum, int depth) {
+    g->y = g->y + modsum;
+    g->x = depth - g->x;
+    modsum += g->modx;
+
+    for (int i = 0; i < g->input_count; i++) {
+        if (g->inputs[i] != NULL) {
+            __bloop_add_mods_and_reverse_x(g->inputs[i], modsum, depth);
+        }
+    }
+}
+
+
+void bloop_calculate_layout(bloop_generator *g) {
+    int *nexts = malloc(sizeof(int) * BLOOP_MAX_LAYOUT_DEPTH);
+    int *offset = malloc(sizeof(int) * BLOOP_MAX_LAYOUT_DEPTH);
+    memset(nexts, 0, BLOOP_MAX_LAYOUT_DEPTH);
+    memset(offset, 0, BLOOP_MAX_LAYOUT_DEPTH);
+    int depth = __bloop_calculate_layout(g, 0, nexts, offset);
+    __bloop_add_mods_and_reverse_x(g, 0, depth);
+}
