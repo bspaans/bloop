@@ -40,7 +40,17 @@ void init(void) {
     bloop_generator *kick_drum_rumble2 = bloop_repeat(bloop_distortion(bloop_delay(bloop_average(2, kick_drum, kick_drum_rumble1), LFO(1.0, 11025, 5000), LFO(32.0, 0.7, 0.2), LFO(32.0, 0.5, 0.4)), C(0.8), C(4.5)), 88200);
     bloop_generator *wobble2 = bloop_sine_wave(bloop_lfo(LFO(8.0, 24, 24), C(880), C(440.0)), bloop_lfo(C(128.0), C(0.2), LFO(2, 0.1, 0.05)));
     generator = bloop_average(2, kick_drum_rumble2, wobble2);
-    generator = bloop_kick_drum_rumble(bloop_kick_drum());
+    generator = bloop_repeat(
+            bloop_sequence(
+                6,
+                bloop_velocity_adjusted_sine_kick_drum(0.1), 22050,
+                bloop_velocity_adjusted_sine_kick_drum(0.3), 22050,
+                bloop_velocity_adjusted_sine_kick_drum(0.5), 22050,
+                bloop_velocity_adjusted_sine_kick_drum(0.7), 22050,
+                bloop_velocity_adjusted_sine_kick_drum(0.9), 22050,
+                bloop_velocity_adjusted_sine_kick_drum(1.0), 22050
+                ), 6 * 22050);
+
 
     saudio_setup(&(saudio_desc){
         .stream_cb = stream_cb

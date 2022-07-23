@@ -15,8 +15,15 @@ bloop_generator* bloop_new_generator(float (*fn)(bloop_generator *, void*, int),
     strncpy(closure->title, title, BLOOP_MAX_TITLE);
     for (int i = 0; i < BLOOP_MAX_INPUTS; i++) {
         closure->inputs[i] = NULL;
+        closure->input_descriptions[i] = NULL;
     }
     return closure;
+}
+
+int bloop_set_generator_input(int input, bloop_generator *g, bloop_generator *input_g, char *title) {
+    g->inputs[input] = input_g;
+    g->input_descriptions[input] = malloc(sizeof(bloop_input_description));
+    strncpy(g->input_descriptions[input]->title, title, BLOOP_MAX_INPUT_TITLE);
 }
 
 int bloop_generator_depth(bloop_generator *g) {
@@ -50,8 +57,8 @@ bloop_generator *bloop_sine_wave(bloop_generator *pitch, bloop_generator *gain) 
     bloop_sine_wave_data *v = malloc(sizeof(bloop_sine_wave_data));
     bloop_generator *g = bloop_new_generator(bloop_sine_wave_, BLOOP_SINE, "SINE", v);
     g->input_count = 2;
-    g->inputs[SINE_WAVE_PITCH] = pitch;
-    g->inputs[SINE_WAVE_GAIN] = gain;
+    bloop_set_generator_input(SINE_WAVE_PITCH, g, pitch, "pitch");
+    bloop_set_generator_input(SINE_WAVE_GAIN, g, gain, "gain");
     return g;
 }
 
@@ -274,10 +281,40 @@ bloop_generator *bloop_average(int count, ...) {
     return g;
 }
 
+float bloop_sequence_(bloop_generator *g, void *value, int tick) {
+    int t = 0;
+    for (int i = 0; i < g->input_count; i++) {
+        int endsAfter = ((int*)g->userData)[i];
+        if (tick < endsAfter) {
+            return bloop_run(g->inputs[i], tick - t);
+        }
+        t = endsAfter;
+    }
+    return 0.0;
+}
+
+
+bloop_generator *bloop_sequence(int count, ...) {
+    bloop_generator *g = bloop_new_generator(bloop_sequence_, BLOOP_SEQUENCE, "SEQUENCE", NULL);
+    g->input_count = count;
+    int *data = malloc(sizeof(int*) * count);
+    va_list args;
+    va_start(args, count);
+    int runningTotal = 0;
+    for (int i = 0; i < count * 2; i = i+2) {
+        g->inputs[i / 2] = va_arg(args, bloop_generator*);
+        int v = va_arg(args, int);
+        data[i/2] = v + runningTotal;
+        runningTotal += v;
+    }
+    g->userData = data;
+    return g;
+}
+
 
 #define BLOOP_MAX_LAYOUT_DEPTH 100
 
-__bloop_move_right(bloop_generator *g, int n) {
+int __bloop_move_right(bloop_generator *g, int n) {
     g->x += n;
     for (int i = 0; i < g->input_count; i++) {
         if (g->inputs[i] != NULL) {

@@ -38,9 +38,19 @@ enum bloop_generator_type {
     BLOOP_REPEAT,
     BLOOP_OFFSET,
     BLOOP_AVERAGE,
+    BLOOP_SEQUENCE,
 };
+
+#define BLOOP_MAX_INPUT_TITLE 16
+
+typedef struct bloop_input_description{
+    char title[BLOOP_MAX_INPUT_TITLE];
+    // TODO: enum type (bloop_int, bloop_float, bloop_bool, whatever);
+} bloop_input_description;
+
 #define BLOOP_MAX_INPUTS 8
 #define BLOOP_MAX_TITLE 16
+
 typedef struct bloop_generator{
     float (*fn)(struct bloop_generator *, void*, int);
     enum bloop_generator_type type;
@@ -48,6 +58,7 @@ typedef struct bloop_generator{
 
     int input_count;
     struct bloop_generator *inputs[BLOOP_MAX_INPUTS];
+    struct bloop_input_description *input_descriptions[BLOOP_MAX_INPUTS];
     char title[BLOOP_MAX_TITLE];
 
     int x;
@@ -57,6 +68,7 @@ typedef struct bloop_generator{
 
 bloop_generator* bloop_new_generator(float (*fn)(bloop_generator *, void*, int), enum bloop_generator_type type, char *title, void *userData);
 int bloop_generator_depth(bloop_generator *g);
+int bloop_set_generator_input(int input, bloop_generator *g, bloop_generator *input_g, char *title);
 
 #define bloop_run(closure, tick) ((*closure->fn)(closure, closure->userData, tick))
 #define bloop_run_input(g, input, tick) (bloop_run(g->inputs[input], tick))
@@ -67,6 +79,7 @@ int bloop_generator_depth(bloop_generator *g);
 typedef struct bloop_sine_wave_data {
     float phase;
 } bloop_sine_wave_data;
+
 
 #define WHITE_NOISE_GAIN 0
 
@@ -139,11 +152,13 @@ bloop_generator *bloop_delay(bloop_generator *input, bloop_generator *delay_samp
 bloop_generator *bloop_repeat(bloop_generator *input, int every);
 bloop_generator *bloop_offset(bloop_generator *input, int offset);
 bloop_generator *bloop_average(int count, ...);
+bloop_generator *bloop_sequence(int count, ...);
 
 // Calculate the x,y for each generator.
 void bloop_calculate_layout(bloop_generator *g);
 
 #define C(c) (bloop_constant(c))
 #define LFO(speed, offset, amount) (bloop_lfo(bloop_constant(speed), bloop_constant(offset), bloop_constant(amount)))
+#define bloop_interpolated_sine_wave(from, to, over, gain)  (bloop_sine_wave(bloop_interpolation(from, to, over), gain))
 
 #endif
